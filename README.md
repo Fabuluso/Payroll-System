@@ -1,0 +1,1 @@
+These codes are not the main codes its just there for reminder of what is there or what you can add in your code. Once you finish your codes just copy and past it in the branch that is yours or you can create a new branch
