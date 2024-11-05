@@ -1,0 +1,72 @@
+import java.sql.*;
+import java.util.Timer;
+import java.util.TimerTask;
+
+public class AutomatedPayrollCalculator {
+    public static void main(String[] args) {
+        Timer timer = new Timer();
+        timer.schedule(new PayrollTask(), 0, 86400000); // Run daily
+    }
+
+    static class PayrollTask extends TimerTask {
+        public void run() {
+            Connection conn = null;
+            PreparedStatement pstmt = null;
+            ResultSet rs = null;
+
+            try {
+                // Connect to the database
+                Class.forName("com.mysql.cj.jdbc.Driver");
+                conn = DriverManager.getConnection("jdbc:mysql://your_host:3306/your_database","your_user", "your_password");
+
+                // Fetch employee information
+                String sql = "SELECT EMPLOYEE_ID, SALARY, TAX_RATE, DEDUCTIONS FROM EMPLOYEE_INFO";
+                pstmt = conn.prepareStatement(sql);
+                rs = pstmt.executeQuery();
+
+                while (rs.next()) {
+                    int employeeId = rs.getInt("EMPLOYEE_ID");
+                    double salary = rs.getDouble("SALARY"); // Admin input this
+                    double taxRate = rs.getDouble("TAX_RATE"); // Admin input this
+                    double deductions = rs.getDouble("DEDUCTIONS"); // Admin input this
+
+                    // Calculate payroll
+                    double taxes = salary * taxRate;
+                    double netPay = salary - taxes - deductions;
+
+                    // Insert payroll data
+                    sql = "INSERT INTO payroll_records (employee_id, gross_pay, net_pay, taxes, deductions) VALUES (?, ?, ?, ?, ?)";
+                    pstmt = conn.prepareStatement(sql);
+                    pstmt.setInt(1, employeeId);
+                    pstmt.setDouble(2, salary);
+                    pstmt.setDouble(3, netPay);
+                    pstmt.setDouble(4, taxes);
+                    pstmt.setDouble(5, deductions);
+                    pstmt.executeUpdate();
+                }
+
+                System.out.println("Payroll calculated and recorded successfully.");
+
+            } catch (ClassNotFoundException | SQLException e) {
+                System.err.println("Error: " + e.getMessage());
+                e.printStackTrace();
+            } finally {
+                try {
+                    if (rs != null) {
+                        rs.close();
+                    }
+                    if (pstmt != null) {
+                        pstmt.close();
+                    }
+                    if (conn != null) {
+                        conn.close();
+                    }
+                } catch (SQLException   
+ e) {
+                    e.printStackTrace();   
+
+                }
+            }
+        }
+    }
+}
