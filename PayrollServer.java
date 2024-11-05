@@ -65,7 +65,7 @@ public class PayrollServiceImpl extends UnicastRemoteObject implements PayrollSe
     public String generatePayrollReport() throws RemoteException {
         StringBuilder report = new StringBuilder();
         for (Employee emp : employeeDatabase.values()) {
-            report.append(emp.generatePayslip()).append("\n");
+            report.append(emp.generatePayrollReport()).append("\n");
         }
         return report.toString();
     }
