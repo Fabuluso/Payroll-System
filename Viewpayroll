@@ -1,0 +1,44 @@
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Payroll {
+
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/payroll_db";
+    private static final String USER = "your_username";
+    private static final String PASS = "your_password";
+
+    public static List<String[]> viewPayroll() {
+        List<String[]> payrollData = new ArrayList<>();
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+             Statement stmt = conn.createStatement();
+             ResultSet   
+ rs = stmt.executeQuery("SELECT * FROM employee_payroll")) {
+
+            while (rs.next()) {
+                String[] employeeInfo = {
+                    rs.getString("employee_id"),
+                    rs.getString("employee_name"),
+                    rs.getString("salary").toString(),
+                    rs.getString("department")
+                };
+                payrollData.add(employeeInfo);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return payrollData;
+    }
+
+    public static void main(String[] args) {
+        List<String[]> payrollInfo = viewPayroll();
+
+        System.out.println("Employee ID\tEmployee Name\tSalary\tDepartment");
+        for (String[] info : payrollInfo) {
+            System.out.format("%-15s\t%-20s\t%-10s\t%-15s\n", info[0], info[1], info[2], info[3]);
+        }
+    }
+}
