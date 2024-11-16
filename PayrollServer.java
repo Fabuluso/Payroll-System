@@ -4,7 +4,9 @@ import java.rmi.RemoteException;
 
 public interface PayrollService extends Remote {
     // Employee functionalities
-    boolean registerEmployee(String firstName, String lastName, String icPassport) throws RemoteException;
+    boolean registerEmployee(String firstName, String lastName, String username, String password, 
+    String jobTitle, String department, String contactInfo, double salary) throws RemoteException;
+    
     boolean updateEmployeeDetails(String icPassport, String email, String contact) throws RemoteException;
     double calculateGrossPay(String icPassport) throws RemoteException;
     String viewPayrollReport(String icPassport) throws RemoteException;
