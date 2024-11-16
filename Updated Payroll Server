@@ -1,0 +1,150 @@
+import java.rmi.server.UnicastRemoteObject;
+import java.rmi.RemoteException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+public class PayrollServiceImpl extends UnicastRemoteObject implements PayrollService {
+
+    // Database connection parameters
+    private static final String DB_URL = "jdbc:your_database_url"; // e.g., jdbc:mysql://localhost:3306/your_database_name
+    private static final String DB_USER = "your_database_user";
+    private static final String DB_PASSWORD = "your_database_password";
+
+    public PayrollServiceImpl() throws RemoteException {
+        super();
+    }
+
+    @Override
+    public boolean registerEmployee(String firstName, String lastName, String icPassport) throws RemoteException {
+        try (Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            // Check if the employee already exists
+            String checkQuery = "SELECT COUNT(*) FROM EMPLOYEE_INFO WHERE USERNAME_ACC = ?";
+            PreparedStatement checkStmt = connection.prepareStatement(checkQuery);
+            checkStmt.setString(1, icPassport);
+            ResultSet rs = checkStmt.executeQuery();
+            if (rs.next() && rs.getInt(1) > 0) {
+                return false; // Employee already exists
+            }
+
+            // Insert the new employee
+            String insertQuery = "INSERT INTO EMPLOYEE_INFO (FIRST_NAME, LAST_NAME, USERNAME_ACC) VALUES (?, ?, ?)";
+            PreparedStatement insertStmt = connection.prepareStatement(insertQuery);
+            insertStmt.setString(1, firstName);
+            insertStmt.setString(2, lastName);
+            insertStmt.setString(3, icPassport);
+            int rowsInserted = insertStmt.executeUpdate();
+            return rowsInserted > 0; // Return true if insertion was successful
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    public boolean updateEmployeeDetails(String icPassport, String email, String contact) throws RemoteException {
+        try (Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            String updateQuery = "UPDATE EMPLOYEE_INFO SET CONTACT_INFO = ? WHERE USERNAME_ACC = ?";
+            PreparedStatement updateStmt = connection.prepareStatement(updateQuery);
+            updateStmt.setString(1, contact);
+            updateStmt.setString(2, icPassport);
+            int rowsUpdated = updateStmt.executeUpdate();
+            return rowsUpdated > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    public double calculateGrossPay(String icPassport) throws RemoteException {
+        try (Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            String selectQuery = "SELECT SALARY FROM EMPLOYEE_INFO WHERE USERNAME_ACC = ?";
+            PreparedStatement selectStmt = connection.prepareStatement(selectQuery);
+            selectStmt.setString(1, icPassport);
+            ResultSet rs = selectStmt.executeQuery();
+            if (rs.next()) {
+                double baseSalary = rs.getDouble("SALARY");
+                // For simplicity, assuming 0 overtime hours in this implementation
+                return baseSalary;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0.0;
+    }
+
+    @Override
+    public String viewPayrollReport(String icPassport) throws RemoteException {
+        try (Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            String selectQuery = "SELECT * FROM EMPLOYEE_INFO WHERE USERNAME_ACC = ?";
+            PreparedStatement selectStmt = connection.prepareStatement(selectQuery);
+            selectStmt.setString(1, icPassport);
+            ResultSet rs = selectStmt.executeQuery();
+            if (rs.next()) {
+                return "Payroll Report for " + rs.getString("FIRST_NAME") + " " + rs.getString("LAST_NAME") +
+                        "\nSalary: " + rs.getDouble("SALARY") +
+                        "\nContact: " + rs.getString("CONTACT_INFO");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return "Employee not found.";
+    }
+
+    @Override
+    public boolean updatePayrollData(String icPassport, double salary) throws RemoteException {
+        try (Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            String updateQuery = "UPDATE EMPLOYEE_INFO SET SALARY = ? WHERE USERNAME_ACC = ?";
+            PreparedStatement updateStmt = connection.prepareStatement(updateQuery);
+            updateStmt.setDouble(1, salary);
+            updateStmt.setString(2, icPassport);
+            int rowsUpdated = updateStmt.executeUpdate();
+            return rowsUpdated > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    public String generatePayrollReport() throws RemoteException {
+        StringBuilder report = new StringBuilder();
+        try (Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            String selectQuery = "SELECT * FROM EMPLOYEE_INFO";
+            PreparedStatement selectStmt = connection.prepareStatement(selectQuery);
+            ResultSet rs = selectStmt.executeQuery();
+            while (rs.next()) {
+                report.append("Employee: ").append(rs.getString("FIRST_NAME")).append(" ").append(rs.getString("LAST_NAME"))
+                        .append(", Salary: ").append(rs.getDouble("SALARY"))
+                        .append(", Contact: ").append(rs.getString("CONTACT_INFO")).append("\n");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return report.toString();
+    }
+
+    @Override
+    public String viewEmployeeDetails(String icPassport) throws RemoteException {
+        try (Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            String selectQuery = "SELECT * FROM EMPLOYEE_INFO WHERE USERNAME_ACC = ?";
+            PreparedStatement selectStmt = connection.prepareStatement(selectQuery);
+            selectStmt.setString(1, icPassport);
+            ResultSet rs = selectStmt.executeQuery();
+            if (rs.next()) {
+                return "Employee Details:\n" +
+                        "Name: " + rs.getString("FIRST_NAME") + " " + rs.getString("LAST_NAME") +
+                        "\nJob Title: " + rs.getString("JOB_TITLE") +
+                        "\nDepartment: " + rs.getString("DEPARTMENT") +
+                        "\nContact: " + rs.getString("CONTACT_INFO") +
+                        "\nSalary: " + rs.getDouble("SALARY");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return "Employee not found.";
+    }
+}
